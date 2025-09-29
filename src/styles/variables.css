@@ -1,0 +1,18 @@
+:root {
+    --background-color: #F5F7FB;
+    --main-text-blue: #293264;
+
+    --color-blue-1: #4D5B9E;
+    --color-blue-2: #D6DBF5;
+    --color-green-1: #94D7A2;
+    --color-red-1: #F8BCBC;
+    --color-white-1: var(--background-color);
+
+    --border-color: var(--color-blue-1);
+    --border-radius-1: 0.5rem;
+    --border-radius-2: 0.75rem;
+    --border-radius-3: 1rem;
+
+    --transition-duration: 0.2s;
+
+}
