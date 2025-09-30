@@ -6,6 +6,7 @@ import  he  from "he"
 данными с перемешаннми объектами */
 import  { updatedQuizArr } from "./utils.js"
 import { addUserAnswerIntoData } from "./utils.js"
+import { translateData } from "./utils.js"
 
 export default function QuestionPage(props) {
 
@@ -14,43 +15,63 @@ export default function QuestionPage(props) {
     const [data, setData] = useState(null)
     /* состояние хранения корректных ответов пользователя */
     const [rightUserAnswCount, setRightUserAnswCount] = useState(null)
-    /* состояние управления вызова к АПИ */
+    /* состояние управления вызова к АПИ с вопросами */
     const [shouldFetch, setShouldFetch] = useState(true)
-    let quizElements = ""
-    let dataTemp = []
-    let shfetch = true
+    /* состояние управления вызова к АПИ для перевода */
+    const [shouldTranslate, setShouldTranslate] = useState(true)
 
-    /* обработка запроса с АПИ здесь, триггер на shouldFetch */
+    let quizElements = ""
+    let tempData = []
+
+    /* Запись ответа с АПИ с вопросами здесь, 
+    триггер на shouldFetch, данные получены на английском языке */
     useEffect(()=> {
         if (shouldFetch === true) {
-        console.log("внутри useEffect, внутри if, запрос к АПИ")
+/*             console.log("Внутри useEffect с получением данных") */
             fetch(urlQuizQuery)
                 .then(res=> res.json())
                 .then(dataApi => {
-                    setShouldFetch(false) 
-                    setData(() => updatedQuizArr(dataApi.results))
-                    console.log("Данные получены")
+                    setData(() => updatedQuizArr(dataApi.results)) 
+/*                     console.log("Данные получены")
+                    console.log(tempData) */
                     setRightUserAnswCount(null)
+                    setShouldFetch(false)
                 })
         }
     }, [shouldFetch])
 
+    /* Перевод данных с АПИ, отправка данных на АПИ перевода, 
+    триггер на shouldFetch */
+    useEffect(() => {
+        if(shouldFetch === false && shouldTranslate === true && data) {
+            /* console.log("Внутри useEffect с переводом") */
+            const doTranslate = async() => {
+                const translated = await translateData(data)
+                setData(translated)
+                /* console.log("Данные вернулись") */
+                setShouldTranslate(false)
+            }
+
+            doTranslate()
+        }
+    }, [shouldFetch, shouldTranslate, data])
     
 
     /* когда данные получены, отрисовать контент на странице */
-    if (data != null) {
+    if (data != null && shouldTranslate === false) {
+            console.log("отражается контент на странице")
             console.log(data)
             quizElements = data.map(function(question, indexQ){
 
                 /* переменная с блоком ответов на вопрос */
-                const answerEl = question.mixed_answers.map(function(answer, indexA) {
+                const answerEl = question.mixed_answers_ru.map(function(answer, indexA) {
 
                     /* Для корректной работы clsx */
                     const isRight = (rightUserAnswCount != null) && 
-                    (question.user_answer === question.correct_answer);
+                    (question.user_answer === question.correct_answer_ru);
                     const isWrong = (rightUserAnswCount != null) && 
-                    (question.user_answer != question.correct_answer);
-                    const isCorrect = isWrong && answer === question.correct_answer
+                    (question.user_answer != question.correct_answer_ru);
+                    const isCorrect = isWrong && answer === question.correct_answer_ru
                     const labelClasses = clsx({"inter-text": true},
                         {"ranswer": isRight}, {"wanswer": isWrong}, {"correct": isCorrect}
                     )
@@ -62,7 +83,8 @@ export default function QuestionPage(props) {
                                 id={answer} 
                                 name={`q${indexQ}`} 
                                 value={answer}
-                                disabled={rightUserAnswCount != null}>
+                                disabled={rightUserAnswCount != null}
+                                required>
                             </input>
                             <label htmlFor={answer} className={labelClasses}>{answer}</label>
                         </div>
@@ -71,7 +93,7 @@ export default function QuestionPage(props) {
                 /* переменная с вопросом и с блоком ответов */
                 return (
                     <div key={`q${indexQ}`} className="quiz-el">
-                        <p className="bold-text">{he.decode(question.question)}</p>
+                        <p className="bold-text">{he.decode(question.question_ru)}</p>
                             <div className="answers"> 
                                 {answerEl}
                             </div>
@@ -101,7 +123,7 @@ function checkAnswers(e) {
     let countRightAnswers = 0 
 
     data.forEach(function(question, index) {
-            if (question.correct_answer === usersAnswersTemp[index]) {
+            if (question.correct_answer_ru === usersAnswersTemp[index]) {
             countRightAnswers = countRightAnswers + 1
             }
         })
@@ -111,7 +133,9 @@ function checkAnswers(e) {
 }
 
 console.log(`state ${rightUserAnswCount}`) /* корректно подсчитано сколько верных ответов у пользователя */
-    
+    if (!data || shouldTranslate) {
+        return <p>Переводим вопросы :)</p>
+    } 
     return (
         <section className="quiz-section">
             <form onSubmit={checkAnswers}>
@@ -129,7 +153,7 @@ console.log(`state ${rightUserAnswCount}`) /* корректно подсчит�
                         `Правильный ответ по ${rightUserAnswCount} из ${data.length} вопросам.`}
                     </p>
                     <button className="system-btn check-btn" onClick={props.startToggle}>
-                        Играть ещё!</button>
+                        К стартовой странице.</button>
                 </div>
             }
         </section>
